@@ -216,7 +216,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                         then
                             kill -2 $(ps aux | grep 'chat/run' | grep -v grep | awk '{print $2}')
                         else
-                            ~/chat/run revert
+                            ~/chat/run --revert
                         fi
                         """
 
