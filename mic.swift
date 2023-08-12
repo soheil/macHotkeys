@@ -196,6 +196,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
+        let binaryPath = ProcessInfo.processInfo.arguments[0]
+        let dir = NSString(string: binaryPath).deletingLastPathComponent
+
         NSEvent.addGlobalMonitorForEvents(matching: [.flagsChanged, .keyDown]) { event in
 
             if event.keyCode == 63 && event.modifierFlags.contains(.function) {
@@ -203,8 +206,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 return
             }
             let flags = event.modifierFlags
-
-            if event.keyCode == 53 { //53 is the keyCode for escape
+            if flags.contains(.option) {
                 if let lastTimeStamp = self.lastEscapePressTimeStamp {
                     let delay = event.timestamp - lastTimeStamp
 
@@ -216,7 +218,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                         then
                             kill -2 $(ps aux | grep 'chat/run' | grep -v grep | awk '{print $2}')
                         else
-                            . ~/.bash_profile; ~/chat/run --revert
+                            ~/chat/run --revert
                         fi
                         """
 
@@ -236,24 +238,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let requiredFlagsPressed = flags.intersection(requiredFlags) == requiredFlags
 
             if event.keyCode == 5 && requiredFlagsPressed {
-                let script = """
-                tell application "Sublime Text"
-                    activate
-                end tell
-
-                tell application "System Events"
-                    keystroke "2" using {command down, option down}
-                    keystroke "2" using control down
-                    keystroke "w" using {control down, option down}
-                end tell
-                do shell script "DIR=~/chat/gpt;find $DIR -type f -empty -delete;FILE=$DIR/$(date '+%Y-%m-%d_%H:%M:%S').md;touch $FILE;/usr/local/bin/subl $FILE"
-
-                """
-                print("output")
-
                 let task = Process()
                 task.launchPath = "/usr/bin/osascript"
-                task.arguments = ["-e", script]
+                task.arguments = ["\(dir)/ide-helper.scpt"]
 
                 let pipe = Pipe()
                 task.standardOutput = pipe
@@ -284,7 +271,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self.imageView1?.image = nil
                 self.imageView2?.image = nil
             } else {
-                let iconPath = "~/chat/mic-muted.gif"
+                let iconPath = "\(dir)/mic-muted.gif"
                 let image = NSImage(contentsOfFile: iconPath)
                 self.imageView1?.image = image
                 self.imageView2?.image = image
