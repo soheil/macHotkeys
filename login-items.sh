@@ -13,7 +13,7 @@ done < ~/.env
 
 open -a "$EDITOR_APP_NAME"
 
-$DIR/chat0/heater &
+~/chat0/heater &
 $DIR/mic &
 
 while true; do

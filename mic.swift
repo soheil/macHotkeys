@@ -264,6 +264,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 return
             }
+            if flags.contains(.command) && event.keyCode == 119 {
+                let workspace = NSWorkspace.shared
+                let frontmostApp = workspace.frontmostApplication
+                let appName = frontmostApp?.localizedName
+
+                print(appName)
+                if appName == "Zoom" {
+                    print(AppDelegate.runBashCommand("kill -9 $(ps aux|grep '[M]acOS/zoom'|awk '{print $2}')"))
+                }
+            }
 
         }
         let screenRect = NSScreen.main!.frame
