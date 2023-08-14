@@ -5,7 +5,7 @@
 	<key>Label</key>
 	<string>login-items</string>
 	<key>Program</key>
-	<string>/Users/soheil/.login-items</string>
+	<string>/Users/soheil/macHotkeys/login-items</string>
 	<key>RunAtLoad</key>
 	<true/>
   <key>StandardOutPath</key>
