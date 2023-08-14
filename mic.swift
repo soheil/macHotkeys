@@ -175,7 +175,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var imageView2: NSImageView?
 
     var lastEscapePressTimeStamp: TimeInterval?
-    var delayForDoublePress: TimeInterval = 0.5
+    var lastShiftPressTimeStamp: TimeInterval?
+    var delayForDoublePress: TimeInterval = 0.3
 
     func addImage(_ imageWindowRect: NSRect, _ imageView: inout NSImageView?) {
         window = NSWindow(contentRect: imageWindowRect, styleMask: .borderless, backing: .buffered, defer: false)
@@ -201,12 +202,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         NSEvent.addGlobalMonitorForEvents(matching: [.flagsChanged, .keyDown]) { event in
 
-            if event.keyCode == 63 && event.modifierFlags.contains(.function) {
+            let flags = event.modifierFlags
+            // if event.keyCode == 63 && flags.contains(.function) {
+            if flags.contains(.function) {
                 Audio.shared.toggleMicMute()
                 return
             }
-            let flags = event.modifierFlags
-            if flags.contains(.option) {
+
+            let leftCmd = 1048840
+            if flags.rawValue == leftCmd && event.keyCode == 53 {
                 if let lastTimeStamp = self.lastEscapePressTimeStamp {
                     let delay = event.timestamp - lastTimeStamp
 
@@ -232,28 +236,35 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 } else {
                     self.lastEscapePressTimeStamp = event.timestamp
                 }
+                return
             }
 
-            let requiredFlags: NSEvent.ModifierFlags = [.option, .command]
-            let requiredFlagsPressed = flags.intersection(requiredFlags) == requiredFlags
+            let leftCmdShift = 1179916
+            let rightCmdShift = 1179924
+            // 60 means only if right shift key is down
+            if (flags.rawValue == leftCmdShift || flags.rawValue == rightCmdShift) && event.keyCode == 60 {
+                if let lastTimeStamp = self.lastShiftPressTimeStamp {
+                    let delay = event.timestamp - lastTimeStamp
 
-            if event.keyCode == 5 && requiredFlagsPressed {
-                let task = Process()
-                task.launchPath = "/usr/bin/osascript"
-                task.arguments = ["\(dir)/ide-helper.scpt"]
+                    if delay < self.delayForDoublePress {
+                        let task = Process()
+                        // task.launchPath = "/bin/sh"
+                        // task.arguments = ["-c", "/usr/bin/osascript \(dir)/ide-helper.scpt >/tmp/ran 2>&1"]
+                        
+                        task.launchPath = "/usr/bin/osascript"
+                        task.arguments = ["\(dir)/ide-helper.scpt"]
 
-                let pipe = Pipe()
-                task.standardOutput = pipe
-                task.standardError = pipe
-
-                task.launch()
-                task.waitUntilExit()
-
-                let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                if let output = String(data: data, encoding: .utf8) {
-                    print(output)
+                        task.launch()
+                        task.waitUntilExit()
+                    } else {
+                        self.lastShiftPressTimeStamp = event.timestamp
+                    }
+                } else {
+                    self.lastShiftPressTimeStamp = event.timestamp
                 }
+                return
             }
+
         }
         let screenRect = NSScreen.main!.frame
         let imageWindowWidth = screenRect.size.width / 3
