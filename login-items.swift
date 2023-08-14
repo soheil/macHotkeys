@@ -8,7 +8,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let task = Process()
         task.launchPath = "/usr/bin/env"
-        task.arguments = ["\(dir)/.login-items.sh"]
+        task.arguments = ["\(dir)/login-items.sh"]
         task.launch()
         exit(0)
     }
