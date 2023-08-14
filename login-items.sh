@@ -8,7 +8,7 @@ osascript -e "quit app \"$EDITOR_APP_NAME\""
 
 while IFS= read -r line; do
   launchctl setenv "${line%=*}" "${line#*=}"
-done < $DIR/.env
+done < ~/.env
 
 
 open -a "$EDITOR_APP_NAME"
