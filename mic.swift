@@ -1,6 +1,7 @@
 import Cocoa
 import Foundation
 import AudioToolbox
+import Down
 
 struct AudioObjectAddress {
     static var inputDevice = AudioObjectPropertyAddress(
@@ -138,7 +139,7 @@ class Audio {
     }
 
     private func registerDefaultMicListener() {
-        let status = AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &AudioObjectAddress.inputDevice, DispatchQueue.main, defaultMicListener)
+        AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &AudioObjectAddress.inputDevice, DispatchQueue.main, defaultMicListener)
     }
 
     private func unregisterDefaultMicListener() {
@@ -171,26 +172,22 @@ class Audio {
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var window: NSWindow?
+    var textView: NSTextView?
+
     var imageView1: NSImageView?
     var imageView2: NSImageView?
-
+    
     var lastEscapePressTimeStamp: TimeInterval?
     var lastShiftPressTimeStamp: TimeInterval?
     var delayForDoublePress: TimeInterval = 0.3
 
     func addImage(_ imageWindowRect: NSRect, _ imageView: inout NSImageView?) {
-        window = NSWindow(contentRect: imageWindowRect, styleMask: .borderless, backing: .buffered, defer: false)
-        window?.backgroundColor = NSColor.clear
-        window?.isOpaque = false
-        window?.level = .floating
-        window?.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-
         imageView = NSImageView(frame: imageWindowRect)
         imageView?.imageScaling = .scaleProportionallyUpOrDown
         imageView?.alphaValue = 0.5
         imageView?.animates = true
 
-        window?.contentView = imageView
+        window?.contentView?.addSubview(imageView!)
 
         window?.makeKeyAndOrderFront(nil)
         window?.ignoresMouseEvents = true
@@ -269,14 +266,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 let frontmostApp = workspace.frontmostApplication
                 let appName = frontmostApp?.localizedName
 
-                print(appName)
                 if appName == "Zoom" {
-                    print(AppDelegate.runBashCommand("kill -9 $(ps aux|grep '[M]acOS/zoom'|awk '{print $2}')"))
+                    // print(AppDelegate.runBashCommand("kill -9 $(ps aux|grep '[M]acOS/zoom'|awk '{print $2}')"))
                 }
             }
 
         }
         let screenRect = NSScreen.main!.frame
+
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: screenRect.size.width, height: screenRect.size.height), styleMask: .borderless, backing: .buffered, defer: false)
+        window?.backgroundColor = NSColor.clear
+        window?.isOpaque = false
+        window?.level = .floating
+        window?.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+
+
         let imageWindowWidth = screenRect.size.width / 3
         let imageWindowHeight = screenRect.size.height / 4
 
@@ -285,6 +289,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let imageWindowRect2 = NSMakeRect(imageWindowWidth/1.5, 20, imageWindowWidth, imageWindowHeight)
         addImage(imageWindowRect2, &imageView2)
+
+        // backgroundView = NSView(frame: NSRect(x: screenRect.size.width*(2/3), y: 0, width: screenRect.size.width, height: screenRect.size.height))
+        // backgroundView?.wantsLayer = true
+        // backgroundView?.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.7).cgColor
+
+        // textField = NSTextField(frame: NSRect(x: 10, y: 0, width: backgroundView!.frame.width/3-20, height: backgroundView!.frame.height))
+        // textField?.stringValue
+        let markdownText = try! String(contentsOfFile: "/Users/soheil/chat/gpt/2023-08-27_06:35:32.md")
+        // textField?.textColor = NSColor.white.withAlphaComponent(0.8)
+        // textField?.isBordered = false
+        // textField?.isEditable = false
+        // textField?.backgroundColor = NSColor.clear
+        // textField?.font = NSFont(name: "Menlo-Regular", size: 12)
+        // textField?.cell?.wraps = true
+        // textField?.cell?.isScrollable = false
+
+        let down = Down(markdownString: markdownText)
+        let attributedString = try? down.toAttributedString()
+        textView?.attributedString = attributedString
+
+        window?.contentView?.addSubview(textView!)
 
         let muteListenerId = Audio.shared.addDeviceStateListener { [] in
             print(Audio.shared.micMuted)
@@ -298,6 +323,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self.imageView2?.image = image
             }
         }
+        print(muteListenerId)
     }
 }
 
