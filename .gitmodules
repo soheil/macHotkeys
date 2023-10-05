@@ -4,7 +4,3 @@
 [submodule "Highlightr"]
 	path = Highlightr
 	url = https://github.com/raspu/Highlightr.git
-[submodule "MarkdownUI"]
-	path = MarkdownUI
-	url = https://github.com/gonzalezreal/swift-markdown-ui
-

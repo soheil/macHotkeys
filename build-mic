@@ -1,0 +1,20 @@
+#!/bin/bash
+
+for file in `find * -maxdepth 2 -name "Package.swift"`; do
+  pkg=`dirname $file`
+  flags="$flags -L $pkg/.build/debug -I $pkg/.build/debug -l$pkg"
+
+  grep -q "static" $file && continue
+  
+  sed -i'' -e '/products: \[/,/]/ {
+  /products: \[/b
+  /]/b
+  /name/a\
+            type: .static,
+  }' $file
+  cd $pkg
+  swift build
+  cd -
+done
+echo "swiftc $flags mic.swift"
+swiftc $flags mic.swift
