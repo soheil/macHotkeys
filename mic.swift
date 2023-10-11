@@ -224,7 +224,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
             let flags = event.modifierFlags
             // if event.keyCode == 63 && flags.contains(.function) {
-            if flags.contains(.function) {
+            if flags.rawValue == 8388864 {
                 Audio.shared.toggleMicMute()
                 return
             }
