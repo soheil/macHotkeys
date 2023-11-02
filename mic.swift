@@ -212,21 +212,9 @@ class HoverDetectingImageView: NSImageView {
         // Add your custom logic here
         print("Image view clicked!")
 
-        let cmdWKeyCode: CGKeyCode = 13  // 13 represents the 'w' key
-        let cmdKeyFlag = CGEventFlags.maskCommand
-
-        // Simulate Cmd+W keypress
-        simulateKeyPress(keyCode: cmdWKeyCode, flags: cmdKeyFlag)
-    }
-
-    func simulateKeyPress(keyCode: CGKeyCode, flags: CGEventFlags) {
-        let keyDownEvent = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: true)
-        keyDownEvent?.flags = flags
-        keyDownEvent?.post(tap: .cghidEventTap)
-        
-        let keyUpEvent = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: false)
-        keyUpEvent?.flags = flags
-        keyUpEvent?.post(tap: .cghidEventTap)
+        if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+            appDelegate.closeWindowGlobally()
+        }
     }
 }
 
@@ -243,10 +231,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     var imageViewLeft: HoverDetectingImageView?
     
+    var lastThreeFingerTapTimeStamp: TimeInterval?
     var lastEscapePressTimeStamp: TimeInterval?
     var lastShiftPressTimeStamp: TimeInterval?
     var delayForDoublePress: TimeInterval = 0.3
     var timer: Timer?
+
+    func simulateKeyPress(keyCode: CGKeyCode, flags: CGEventFlags) {
+        let keyDownEvent = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: true)
+        keyDownEvent?.flags = flags
+        keyDownEvent?.post(tap: .cghidEventTap)
+        
+        let keyUpEvent = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: false)
+        keyUpEvent?.flags = flags
+        keyUpEvent?.post(tap: .cghidEventTap)
+    }
+
+    func closeWindowGlobally() {
+        let cmdWKeyCode: CGKeyCode = 13  // 13 represents the 'w' key
+        let cmdKeyFlag = CGEventFlags.maskCommand
+        // Simulate Cmd+W keypress
+        simulateKeyPress(keyCode: cmdWKeyCode, flags: cmdKeyFlag)
+    }
 
     func runBashCommand(_ command: String) -> String {
         let task = Process()
@@ -281,6 +287,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let binaryPath = ProcessInfo.processInfo.arguments[0]
         let dir = NSString(string: binaryPath).deletingLastPathComponent
 
+
+        NSEvent.addLocalMonitorForEvents(matching: .systemDefined) { event in
+            if event.subtype.rawValue == 6 {
+                if let lastTimeStamp = self.lastThreeFingerTapTimeStamp {
+                    let delay = event.timestamp - lastTimeStamp
+                    if delay < self.delayForDoublePress {
+                        print("----------------")
+                        self.closeWindowGlobally()
+                    } else {
+                        self.lastThreeFingerTapTimeStamp = event.timestamp
+                    }
+                } else {
+                    self.lastThreeFingerTapTimeStamp = event.timestamp
+                }
+            }
+            return event
+        }
 
         NSEvent.addGlobalMonitorForEvents(matching: [.flagsChanged, .keyDown]) { event in
 
