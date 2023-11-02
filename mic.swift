@@ -170,6 +170,66 @@ class Audio {
     }
 }
 
+class HoverDetectingImageView: NSImageView {
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        commonInit()
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)
+        commonInit()
+    }
+
+    private func commonInit() {
+        let trackingArea = NSTrackingArea(rect: bounds,
+                                          options: [.activeAlways, .mouseEnteredAndExited],
+                                          owner: self,
+                                          userInfo: nil)
+        addTrackingArea(trackingArea)
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        super.mouseEntered(with: event)
+        // Image view is being hovered over
+        // Handle your logic here
+        print("Hover started")
+        self.alphaValue = 0.5
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        super.mouseExited(with: event)
+        // Image view hover exited
+        // Handle your logic here
+        print("Hover ended")
+        self.alphaValue = 0
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        super.mouseDown(with: event)
+        // Mouse click detected
+        // Add your custom logic here
+        print("Image view clicked!")
+
+        let cmdWKeyCode: CGKeyCode = 13  // 13 represents the 'w' key
+        let cmdKeyFlag = CGEventFlags.maskCommand
+
+        // Simulate Cmd+W keypress
+        simulateKeyPress(keyCode: cmdWKeyCode, flags: cmdKeyFlag)
+    }
+
+    func simulateKeyPress(keyCode: CGKeyCode, flags: CGEventFlags) {
+        let keyDownEvent = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: true)
+        keyDownEvent?.flags = flags
+        keyDownEvent?.post(tap: .cghidEventTap)
+        
+        let keyUpEvent = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: false)
+        keyUpEvent?.flags = flags
+        keyUpEvent?.post(tap: .cghidEventTap)
+    }
+}
+
 class AppDelegate: NSObject, NSApplicationDelegate {
     var window: NSWindow?
     var textView = ClickableTextView()
@@ -180,6 +240,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     var imageView1: NSImageView?
     var imageView2: NSImageView?
+    
+    var imageViewLeft: HoverDetectingImageView?
     
     var lastEscapePressTimeStamp: TimeInterval?
     var lastShiftPressTimeStamp: TimeInterval?
@@ -332,6 +394,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let imageWindowRect2 = NSMakeRect(imageWindowWidth/1.5, 20, imageWindowWidth, imageWindowHeight)
         addImage(imageWindowRect2, &imageView2)
 
+        let imageWindowRectLeft = NSMakeRect(0, 0, 2, imageWindowHeight)
+
+        imageViewLeft = HoverDetectingImageView(frame: imageWindowRectLeft)
+        imageViewLeft?.alphaValue = 0
+
+        imageViewLeft?.wantsLayer = true
+        imageViewLeft?.layer?.backgroundColor = NSColor(red: 1.0, green: 0.5, blue: 0.5, alpha: 1.0).cgColor
+
+        window?.contentView?.addSubview(imageViewLeft!)
+
         // backgroundView = NSView(frame: NSRect(x: screenRect.size.width*(2/3), y: 0, width: screenRect.size.width, height: screenRect.size.height))
         // backgroundView?.wantsLayer = true
         // backgroundView?.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.7).cgColor
@@ -369,9 +441,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // window?.contentView?.addSubview(scrollView)
 
-
         let muteListenerId = Audio.shared.addDeviceStateListener { [] in
             print(Audio.shared.micMuted)
+            print(99)
             if !Audio.shared.micMuted || !Audio.shared.isRunning {
                 self.imageView1?.image = nil
                 self.imageView2?.image = nil
@@ -382,7 +454,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self.imageView2?.image = image
             }
         }
-        print(muteListenerId)
     }
     func clicked(_ scrollView: ClickableTextView) {
         print("ScrollView clicked")
@@ -396,7 +467,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
 }
-
 
 class ClickableTextView: NSTextView {
     weak var clickDelegate: AppDelegate?
